@@ -5,6 +5,7 @@ import (
 	fmt "fmt"
 	"go-grpc-course/calculator/calculatorpb"
 	"google.golang.org/grpc"
+	"io"
 	"log"
 )
 
@@ -22,7 +23,8 @@ func main() {
 	c := calculatorpb.NewCalculatorServiceClient(cc)
 
 	fmt.Printf("Created client: %v", c)
-	doUnary(c)
+	//doUnary(c)
+	doServerStreaming(c)
 }
 
 func doUnary(c calculatorpb.CalculatorServiceClient) {
@@ -41,4 +43,30 @@ func doUnary(c calculatorpb.CalculatorServiceClient) {
 	}
 
 	log.Printf("number1 + number2 =  %v ", res.Result)
+}
+
+func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
+	fmt.Printf("Starginf to do Server a Server Streaming RPC...\n")
+	var number int32
+	fmt.Scanf("%d", &number)
+	req := &calculatorpb.NumberRequest{
+		Number: number,
+	}
+
+	resStream, err := c.PrimeNumberDecomposition(context.Background(), req)
+	if err != nil {
+		log.Fatalf("error while calling Streaming Server RPC: %V", err)
+	}
+
+	for {
+		msg, err := resStream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("error while calling Server Streaming RPC: %v", err)
+		}
+		log.Printf("PrimeNumberDecomposition(%d): %v", number, msg.GetResult())
+	}
+
 }
